@@ -1,0 +1,23 @@
+# Makefile for Windows (MinGW)
+CC = gcc
+CFLAGS = -Wall -Wextra -O2 -mwindows
+LDFLAGS = -lpsapi -luser32 -lgdi32 -lkernel32
+TARGET = openkey.exe
+SOURCES = main.c hook_windows.c
+OBJECTS = $(SOURCES:.c=.o)
+
+.PHONY: all clean run
+
+all: $(TARGET)
+
+$(TARGET): $(OBJECTS)
+	$(CC) $(CFLAGS) -o $(TARGET) $(OBJECTS) $(LDFLAGS)
+
+%.o: %.c
+	$(CC) $(CFLAGS) -D_WIN32 -c $< -o $@
+
+clean:
+	del /Q $(OBJECTS) $(TARGET) 2>nul || true
+
+run: $(TARGET)
+	.\$(TARGET)
