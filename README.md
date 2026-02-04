@@ -113,3 +113,13 @@ File log sẽ được mở ở chế độ append, nên các session mới sẽ
 ```bash
 make clean
 ```
+
+## CI/CD
+
+Project sử dụng GitHub Actions để tự động build phiên bản Windows x64 khi:
+- Push code lên branch `main` hoặc `master`
+- Tạo Pull Request
+- Tạo tag bắt đầu với `v` (ví dụ: `v1.0.0`)
+- Chạy thủ công qua GitHub Actions tab
+
+Artifact sẽ được upload tự động và có thể download từ Actions tab hoặc Releases (nếu có tag).

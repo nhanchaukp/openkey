@@ -1,0 +1,17 @@
+# Build artifacts
+*.o
+*.exe
+*.log
+openkey
+openkey.exe
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db

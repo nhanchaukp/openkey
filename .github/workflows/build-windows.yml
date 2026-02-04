@@ -1,0 +1,57 @@
+name: Build Windows x64
+
+on:
+  push:
+    branches: [ main, master ]
+    tags:
+      - 'v*'
+  pull_request:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Setup MinGW
+      uses: egor-tensin/setup-mingw@v2
+      with:
+        version: latest
+        platform: x86_64
+    
+    - name: Build openkey.exe
+      run: |
+        gcc -Wall -Wextra -O2 -D_WIN32 -c main.c -o main.o
+        gcc -Wall -Wextra -O2 -D_WIN32 -c hook_windows.c -o hook_windows.o
+        gcc -Wall -Wextra -O2 -o openkey.exe main.o hook_windows.o -lpsapi -luser32 -lgdi32 -lkernel32
+    
+    - name: Verify binary
+      run: |
+        if exist openkey.exe (
+          echo "Build successful!"
+          dir openkey.exe
+        ) else (
+          echo "Build failed - openkey.exe not found"
+          exit 1
+        )
+    
+    - name: Upload artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: openkey-windows-x64
+        path: openkey.exe
+        retention-days: 3
+    
+    - name: Create release (on tag)
+      if: startsWith(github.ref, 'refs/tags/v')
+      uses: softprops/action-gh-release@v1
+      with:
+        files: openkey.exe
+        draft: false
+        prerelease: false
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
