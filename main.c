@@ -140,7 +140,7 @@ BOOL WINAPI ConsoleHandler(DWORD dwType) {
     if (dwType == CTRL_C_EVENT || dwType == CTRL_CLOSE_EVENT) {
         printf("\nReceived signal, stopping hook...\n");
         if (g_logFile) {
-            fprintf(g_logFile, "\n[%ld] Received signal, stopping hook...\n", time(NULL));
+            fprintf(g_logFile, "\n[%lld] Received signal, stopping hook...\n", (long long)time(NULL));
             fflush(g_logFile);
         }
         

