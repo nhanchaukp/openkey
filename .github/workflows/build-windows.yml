@@ -15,17 +15,12 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v4
 
-    - name: Setup MSYS2 and MinGW
-      uses: msys2/setup-msys2@v2
-      with:
-        update: true
-        install: mingw-w64-x86_64-gcc mingw-w64-x86_64-toolchain
-    
-    - name: Add MinGW to PATH
-      shell: bash
+    - name: Setup MinGW via Chocolatey
+      shell: powershell
       run: |
-        echo "/c/msys64/mingw64/bin" >> $GITHUB_PATH
-        export PATH="/c/msys64/mingw64/bin:$PATH"
+        choco install mingw -y --force
+        $env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User")
+        refreshenv
         gcc --version
     
     - name: Build openkey.exe
