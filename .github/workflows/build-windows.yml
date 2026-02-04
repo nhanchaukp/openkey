@@ -14,34 +14,37 @@ jobs:
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
-    # Before uninstalling mingw, add a conditional check
-    - name: Uninstall MinGW only if installed
-      run: |
-        if choco list --local-only | findstr /I mingw; then
-            choco uninstall mingw -y
-        else
-            echo "mingw is not installed. Skipping uninstall."
-        fi
-    - name: Setup MinGW
-      uses: egor-tensin/setup-mingw@v2
+
+    - name: Setup MSYS2 and MinGW
+      uses: msys2/setup-msys2@v2
       with:
-        platform: x86_64
+        update: true
+        install: mingw-w64-x86_64-gcc mingw-w64-x86_64-toolchain
+    
+    - name: Add MinGW to PATH
+      shell: bash
+      run: |
+        echo "/c/msys64/mingw64/bin" >> $GITHUB_PATH
+        export PATH="/c/msys64/mingw64/bin:$PATH"
+        gcc --version
     
     - name: Build openkey.exe
+      shell: bash
       run: |
         gcc -Wall -Wextra -O2 -D_WIN32 -c main.c -o main.o
         gcc -Wall -Wextra -O2 -D_WIN32 -c hook_windows.c -o hook_windows.o
         gcc -Wall -Wextra -O2 -o openkey.exe main.o hook_windows.o -lpsapi -luser32 -lgdi32 -lkernel32
     
     - name: Verify binary
+      shell: bash
       run: |
-        if exist openkey.exe (
+        if [ -f openkey.exe ]; then
           echo "Build successful!"
-          dir openkey.exe
-        ) else (
+          ls -lh openkey.exe
+        else
           echo "Build failed - openkey.exe not found"
           exit 1
-        )
+        fi
     
     - name: Upload artifact
       uses: actions/upload-artifact@v4
