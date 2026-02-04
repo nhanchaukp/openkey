@@ -14,7 +14,14 @@ jobs:
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
-    
+    # Before uninstalling mingw, add a conditional check
+    - name: Uninstall MinGW only if installed
+      run: |
+        if choco list --local-only | findstr /I mingw; then
+            choco uninstall mingw -y
+        else
+            echo "mingw is not installed. Skipping uninstall."
+        fi
     - name: Setup MinGW
       uses: egor-tensin/setup-mingw@v2
       with:
